@@ -73,6 +73,7 @@ namespace GitUI
             FileStatusListView.LargeImageList = _images;
 
             NoFiles.Visible = false;
+            this.Controls.SetChildIndex(NoFiles, 0);
             NoFiles.Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Italic);
 
             _filter = new Regex(".*");
@@ -723,6 +724,7 @@ namespace GitUI
         }
         public void SetDiffs(List<GitRevision> revisions)
         {
+            NoFiles.Visible = false;
             switch (revisions.Count)
             {
                 case 0:
@@ -750,6 +752,26 @@ namespace GitUI
                     NoFiles.Text = _UnsupportedMultiselectAction.Text;
                     GitItemStatuses = null;
                     break;
+            }
+            UpdateNoFilesLabelVisibility();
+        }
+
+        private void UpdateNoFilesLabelVisibility()
+        {
+            if (GitItemStatusesWithParents == null && GitItemStatuses == null)
+                NoFiles.Visible = true;
+            else if (GitItemStatusesWithParents != null)
+            {
+                List<string> keys = GitItemStatusesWithParents.Keys.ToList();
+                if (keys.Count == 0)
+                    NoFiles.Visible = true;
+                else if (keys.Count == 1 && (GitItemStatusesWithParents[keys[0]] == null || GitItemStatusesWithParents[keys[0]].Count == 0))
+                    NoFiles.Visible = true;
+            }
+            else if (GitItemStatuses != null)
+            {
+                if (GitItemStatuses.Count == 0)
+                    NoFiles.Visible = true;
             }
         }
 
