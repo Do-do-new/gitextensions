@@ -541,10 +541,6 @@ namespace GitUI
 
         private void UpdateFileStatusListView()
         {
-            if (_itemsDictionary == null || !_itemsDictionary.Any())
-                NoFiles.Visible = true;
-            else
-                NoFiles.Visible = false;
             FileStatusListView.BeginUpdate();
             FileStatusListView.ShowGroups = _itemsDictionary != null && _itemsDictionary.Count > 1;
             FileStatusListView.Groups.Clear();
