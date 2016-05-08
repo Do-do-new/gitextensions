@@ -951,7 +951,7 @@ namespace GitUI.CommandsDialogs
             this.FilterWatermarkLabel.Name = "FilterWatermarkLabel";
             this.FilterWatermarkLabel.Size = new System.Drawing.Size(26, 21);
             this.FilterWatermarkLabel.TabIndex = 3;
-            this.FilterWatermarkLabel.Text = "Search";
+            this.FilterWatermarkLabel.Text = "\U0001F50D";
             // 
             // DiffFiles
             // 
