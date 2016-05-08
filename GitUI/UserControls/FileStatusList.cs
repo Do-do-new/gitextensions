@@ -532,29 +532,25 @@ namespace GitUI
             }
             set
             {
-                _itemsChanging = true;
-                if (value == null || !value.Any())
-                    NoFiles.Visible = true;
-                else
-                    NoFiles.Visible = false;
+                _itemsDictionary = value;
+                UpdateFileStatusListView();
+            }
+        }
 
-                bool empty = FileStatusListView.Items.Count == 0;
-                FileStatusListView.ShowGroups = value != null && value.Count > 1;
-                FileStatusListView.Groups.Clear();
-                FileStatusListView.Items.Clear();
-                _itemsDictionary = new Dictionary<string, IList<GitItemStatus>>();
-                if (value == null || value.All(pair => pair.Value.Count == 0))
-                {
-                    if (!empty)
-                    {
-                        //bug in the ListView control where supplying an empty list will not trigger a SelectedIndexChanged event, so we force it to trigger
-                        FileStatusListView_SelectedIndexChanged();
-                    }
-                    return;
-                }
-                FileStatusListView.BeginUpdate();
-                var list = new List<ListViewItem>();
-                foreach (var pair in value)
+        private void UpdateFileStatusListView()
+        {
+            _itemsChanging = true;
+            if (_itemsDictionary == null || !_itemsDictionary.Any())
+                NoFiles.Visible = true;
+            else
+                NoFiles.Visible = false;
+            FileStatusListView.BeginUpdate();
+            FileStatusListView.ShowGroups = _itemsDictionary != null && _itemsDictionary.Count > 1;
+            FileStatusListView.Groups.Clear();
+            FileStatusListView.Items.Clear();
+            if (_itemsDictionary != null)
+            {
+                foreach (var pair in _itemsDictionary)
                 {
                     ListViewGroup group = null;
                     if (!String.IsNullOrEmpty(pair.Key))
@@ -576,37 +572,32 @@ namespace GitUI
                     }
                     foreach (var item in pair.Value)
                     {
-                        var listItem = new ListViewItem(item.Name, group);
-                        listItem.ImageIndex = GetItemImageIndex(item);
-                        if (item.SubmoduleStatus != null && !item.SubmoduleStatus.IsCompleted)
                         {
-                            var capturedItem = item;
-                            item.SubmoduleStatus.ContinueWith((task) => listItem.ImageIndex = GetItemImageIndex(capturedItem),
-                                                              CancellationToken.None,
-                                                              TaskContinuationOptions.OnlyOnRanToCompletion,
-                                                              TaskScheduler.FromCurrentSynchronizationContext());
+                            var listItem = new ListViewItem(item.Name, group);
+                            listItem.ImageIndex = GetItemImageIndex(item);
+                            if (item.SubmoduleStatus != null && !item.SubmoduleStatus.IsCompleted)
+                            {
+                                var capturedItem = item;
+                                item.SubmoduleStatus.ContinueWith((task) => listItem.ImageIndex = GetItemImageIndex(capturedItem),
+                                                                  CancellationToken.None,
+                                                                  TaskContinuationOptions.OnlyOnRanToCompletion,
+                                                                  TaskScheduler.FromCurrentSynchronizationContext());
+                            }
+                            listItem.Tag = item;
+                            FileStatusListView.Items.Add(listItem);
                         }
-                        listItem.Tag = item;
-                        list.Add(listItem);
                     };
                 }
-                FileStatusListView.Items.AddRange(list.ToArray());
-                _itemsChanging = false;
-                FileStatusListView_SizeChanged(null, null);
-                foreach (ListViewItem item in FileStatusListView.Items)
-                {
-                    string parentRev = item.Group != null ? item.Group.Tag as string : "";
-                    if (!_itemsDictionary.ContainsKey(parentRev))
-                        _itemsDictionary.Add(parentRev, new List<GitItemStatus>());
-                    _itemsDictionary[parentRev].Add((GitItemStatus)item.Tag);
-                }
-                FileStatusListView.EndUpdate();
-                FileStatusListView.SetGroupState(ListViewGroupState.Collapsible);
-                if (DataSourceChanged != null)
-                    DataSourceChanged(this, new EventArgs());
-                if (SelectFirstItemOnSetItems)
-                    SelectFirstVisibleItem();
             }
+
+            FileStatusListView_SelectedIndexChanged();
+            FileStatusListView_SizeChanged(null, null);
+            FileStatusListView.SetGroupState(ListViewGroupState.Collapsible);
+            if (DataSourceChanged != null)
+                DataSourceChanged(this, new EventArgs());
+            if (SelectFirstItemOnSetItems)
+                SelectFirstVisibleItem();
+            FileStatusListView.EndUpdate();
         }
 
         [DefaultValue(true)]
