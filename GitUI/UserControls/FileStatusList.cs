@@ -539,7 +539,7 @@ namespace GitUI
             }
         }
 
-        private void UpdateFileStatusListView()
+        private void UpdateFileStatusListView(bool updateCausedByFilter=false)
         {
             FileStatusListView.BeginUpdate();
             FileStatusListView.ShowGroups = _itemsDictionary != null && _itemsDictionary.Count > 1;
@@ -587,14 +587,16 @@ namespace GitUI
                     };
                 }
             }
-
-            FileStatusListView_SelectedIndexChanged();
+            if (updateCausedByFilter==false)
+            {
+                FileStatusListView_SelectedIndexChanged();
+                if (DataSourceChanged != null)
+                    DataSourceChanged(this, new EventArgs());
+                if (SelectFirstItemOnSetItems)
+                    SelectFirstVisibleItem();
+            }
             FileStatusListView_SizeChanged(null, null);
             FileStatusListView.SetGroupState(ListViewGroupState.Collapsible);
-            if (DataSourceChanged != null)
-                DataSourceChanged(this, new EventArgs());
-            if (SelectFirstItemOnSetItems)
-                SelectFirstVisibleItem();
             FileStatusListView.EndUpdate();
         }
 
@@ -715,7 +717,7 @@ namespace GitUI
         private int FilterFiles(Regex filter)
         {
             _filter = filter;
-            UpdateFileStatusListView();
+            UpdateFileStatusListView(true);
             return FileStatusListView.Items.Count;
         }
         public void SetDiffs(List<GitRevision> revisions)
