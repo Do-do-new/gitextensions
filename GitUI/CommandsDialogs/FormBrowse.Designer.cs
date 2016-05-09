@@ -86,7 +86,7 @@ namespace GitUI.CommandsDialogs
             this.FileText = new GitUI.Editor.FileViewer();
             this.DiffTabPage = new System.Windows.Forms.TabPage();
             this.DiffSplitContainer = new System.Windows.Forms.SplitContainer();
-            this.FilterWatermarkLabel = new System.Windows.Forms.Label();
+            this.FilterWatermarkPictureBox = new System.Windows.Forms.PictureBox();
             this.FilterToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.DiffFiles = new GitUI.FileStatusList();
             this.DiffContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -930,7 +930,7 @@ namespace GitUI.CommandsDialogs
             // 
             // DiffSplitContainer.Panel1
             // 
-            this.DiffSplitContainer.Panel1.Controls.Add(this.FilterWatermarkLabel);
+            this.DiffSplitContainer.Panel1.Controls.Add(this.FilterWatermarkPictureBox);
             this.DiffSplitContainer.Panel1.Controls.Add(this.DiffFiles);
             this.DiffSplitContainer.Panel1.Controls.Add(this.FilterComboBox);
             // 
@@ -942,16 +942,14 @@ namespace GitUI.CommandsDialogs
             this.DiffSplitContainer.SplitterWidth = 5;
             this.DiffSplitContainer.TabIndex = 0;
             // 
-            // FilterWatermarkLabel
+            // FilterWatermarkPictureBox
             // 
-            this.FilterWatermarkLabel.AutoSize = true;
-            this.FilterWatermarkLabel.Font = new System.Drawing.Font("Tahoma", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.FilterWatermarkLabel.ForeColor = System.Drawing.Color.LightGray;
-            this.FilterWatermarkLabel.Location = new System.Drawing.Point(3, 2);
-            this.FilterWatermarkLabel.Name = "FilterWatermarkLabel";
-            this.FilterWatermarkLabel.Size = new System.Drawing.Size(26, 21);
-            this.FilterWatermarkLabel.TabIndex = 3;
-            this.FilterWatermarkLabel.Text = "\U0001F50D";
+            this.FilterWatermarkPictureBox.AutoSize = true;
+            this.FilterWatermarkPictureBox.Image = global::GitUI.Properties.Resources.IconViewFile;
+            this.FilterWatermarkPictureBox.Location = new System.Drawing.Point(3, 2);
+            this.FilterWatermarkPictureBox.Name = "FilterWatermarkPictureBox";
+            this.FilterWatermarkPictureBox.Size = new System.Drawing.Size(26, 21);
+            this.FilterWatermarkPictureBox.TabIndex = 3;
             // 
             // DiffFiles
             // 
@@ -2283,7 +2281,7 @@ namespace GitUI.CommandsDialogs
         private ToolStripMenuItem cherryPickSelectedDiffFileToolStripMenuItem;
         private ToolStripMenuItem menuitemSparse;
         private ComboBox FilterComboBox;
-        private Label FilterWatermarkLabel;
+        private PictureBox FilterWatermarkPictureBox;
         private ToolTip FilterToolTip;
     }
 }
