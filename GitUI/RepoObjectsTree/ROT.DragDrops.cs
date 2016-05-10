@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -21,7 +22,7 @@ namespace GitUI.UserControls
               * while any objects is dragged over the TreeView, DragOver executes (possibly multiple times)
               * DragEnter and DragOver should determine whether the dragged object is allowed to be dropped
               * if the dragged object is allowed to be dropped and it is, DragDrop executes
-              * 
+              *
               * ItemDrag is raised when a TreeNode is dragged
               */
 
@@ -88,7 +89,7 @@ namespace GitUI.UserControls
                 e.Effect = DragDropEffects.None;
                 return;
             }
-            
+
             Node target = Node.GetNode(targetNode);
 
             if (dragged != target && target.AllowDrop && target.Accepts(dragged))
@@ -177,6 +178,7 @@ namespace GitUI.UserControls
         /// <summary>Occurs when a <see cref="TreeNode"/> is clicked.</summary>
         void OnNodeClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+            treeMain.SelectedNode = e.Node;
             Node.OnNode<Node>(e.Node, node => node.OnClick());
         }
 
@@ -184,7 +186,8 @@ namespace GitUI.UserControls
         /// <remarks>Expand/Collapse still executes for any node with children.</remarks></summary>
         void OnNodeDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            Node.OnNode<Node>(e.Node, node => node.OnDoubleClick());
+            // When folding/unfolding a node, e.Node won't be the one you double clicked, but a child node instead
+            Node.OnNode<Node>(treeMain.SelectedNode, node => node.OnDoubleClick());
         }
     }
 }
