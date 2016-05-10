@@ -97,7 +97,7 @@ namespace GitUI
             InitLayout();
             InitializeComponent();
 
-            _parentChildNavigationHistory = new ParentChildNavigationHistory(SetSelectedRevision);
+            _parentChildNavigationHistory = new ParentChildNavigationHistory((rev) => SetSelectedRevision(rev));
             _revisionHighlighting = new AuthorEmailBasedRevisionHighlighting();
 
             this.Loading.Image = global::GitUI.Properties.Resources.loadingpanel;
@@ -444,7 +444,7 @@ namespace GitUI
         {
             if (_navigationHistory.CanNavigateBackward)
             {
-                InternalSetSelectedRevision(_navigationHistory.NavigateBackward());
+                SetSelectedRevision(_navigationHistory.NavigateBackward());
             }
         }
 
@@ -452,7 +452,7 @@ namespace GitUI
         {
             if (_navigationHistory.CanNavigateForward)
             {
-                InternalSetSelectedRevision(_navigationHistory.NavigateForward());
+                SetSelectedRevision(_navigationHistory.NavigateForward());
             }
         }
 
@@ -639,30 +639,35 @@ namespace GitUI
 
         // Selects row cotaining revision given its revisionId
         // Returns whether the required revision was found and selected
-        private bool InternalSetSelectedRevision(string revision)
+        public bool SetSelectedRevision(string revision)
         {
+            bool revisionSelected = false;
+
             if (revision != null)
             {
-                for (var i = 0; i < Revisions.RowCount; i++)
+                var i = 0;
+                while(i < Revisions.RowCount && !revisionSelected)
                 {
-                    if (GetRevision(i).Guid != revision)
-                        continue;
-                    SetSelectedIndex(i);
-                    return true;
+                    if (GetRevision(i).Guid == revision)
+                    {
+                        SetSelectedIndex(i);
+                        revisionSelected = true;
+                    }
+                    i++;
                 }
             }
 
-            Revisions.ClearSelection();
-            Revisions.Select();
-            return false;
-        }
-
-        public void SetSelectedRevision(string revision)
-        {
-            if (InternalSetSelectedRevision(revision))
+            if (revisionSelected)
             {
                 _navigationHistory.Push(revision);
             }
+            else
+            {
+                Revisions.ClearSelection();
+                Revisions.Select();
+            }
+
+            return revisionSelected;
         }
 
         public GitRevision GetRevision(string guid)
@@ -670,9 +675,9 @@ namespace GitUI
             return Revisions.GetRevision(guid);
         }
 
-        public void SetSelectedRevision(GitRevision revision)
+        public bool SetSelectedRevision(GitRevision revision)
         {
-            SetSelectedRevision(revision != null ? revision.Guid : null);
+            return SetSelectedRevision(revision != null ? revision.Guid : null);
         }
 
         public void HighlightBranch(string aId)
@@ -3052,7 +3057,12 @@ namespace GitUI
             string revisionGuid = Module.RevParse(refName);
             if (!string.IsNullOrEmpty(revisionGuid))
             {
-                SetSelectedRevision(new GitRevision(Module, revisionGuid));
+                if (_isLoading || !SetSelectedRevision(new GitRevision(Module, revisionGuid)))
+                {
+                    _initialSelectedRevision = revisionGuid;
+                    Revisions.SelectedIds = null;
+                    LastSelectedRows = null;
+                }
             }
             else if (showNoRevisionMsg)
             {
