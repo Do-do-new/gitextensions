@@ -1,0 +1,8 @@
+Bug in Settings with label being too long
+Maybe add showing commit hash in Browse view (#2981)
+Add file tree context menu for index and unstaged
+Add possibility to add stash comments
+Filter by keywords in diff lines #2444
+Vertical selection/highlighting? // Idea for graph
+Bug with "Show remotes" in context menu check box always remains on
+Prevent selecting "negative" amount of time in Ctrl+F
