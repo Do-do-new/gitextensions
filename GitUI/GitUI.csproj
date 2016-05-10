@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\FxCop.targets" />
   <PropertyGroup>
@@ -1040,7 +1040,7 @@
     <Compile Include="UserControls\FolderBrowserButton.Designer.cs">
       <DependentUpon>FolderBrowserButton.cs</DependentUpon>
     </Compile>
-    <Compile Include="RepoObjectsTree\ROT.DragDrops.cs">
+    <Compile Include="RepoObjectsTree\ROT.Selection.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="RepoObjectsTree\ROT.Nodes.cs">
@@ -1523,7 +1523,7 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <CustomToolNamespace>GitUI.Properties</CustomToolNamespace>
-      <LogicalName>GitUI.Properties.Resources.resources</LogicalName> 
+      <LogicalName>GitUI.Properties.Resources.resources</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="UserControls\RevisionGrid.resx">
       <DependentUpon>RevisionGrid.cs</DependentUpon>
