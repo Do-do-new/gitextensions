@@ -38,6 +38,11 @@ namespace GitUI.UserControls
                 NodesList.Clear();
             }
 
+            public void Remove(Node aNode)
+            {
+                NodesList.Remove(aNode);
+            }
+
             public IEnumerator<Node> GetEnumerator()
             {
                 var e = NodesList.GetEnumerator();
@@ -112,6 +117,7 @@ namespace GitUI.UserControls
             public GitUICommands UICommands { get { return UICommandsSource.UICommands; } }
             public GitModule Module { get { return UICommands.Module; } }
             public TreeNode TreeViewNode { get; private set; }
+            public Action<List<string>> OnBranchesAdded;
 
             public Tree(TreeNode aTreeNode, IGitUICommandsSource uiCommands)
             {
@@ -133,6 +139,14 @@ namespace GitUI.UserControls
                         }
                         finally
                         {
+                            if (TreeViewNode.TreeView.SelectedNode != null)
+                            {
+                                TreeViewNode.TreeView.SelectedNode.EnsureVisible();
+                            }
+                            else if(TreeViewNode.TreeView.Nodes.Count > 0)
+                            {
+                                TreeViewNode.TreeView.Nodes[0].EnsureVisible();
+                            }
                             TreeViewNode.TreeView.EndUpdate();
                         }
                     };
@@ -151,6 +165,14 @@ namespace GitUI.UserControls
             protected virtual void FillTreeViewNode()
             {
                 Nodes.FillTreeViewNode(TreeViewNode);
+            }
+
+            protected void FireBranchAddedEvent(List<string> branchFullPaths)
+            {
+                if (OnBranchesAdded != null)
+                {
+                    OnBranchesAdded(branchFullPaths);
+                }
             }
         }
 
@@ -195,6 +217,12 @@ namespace GitUI.UserControls
 
             public static void RegisterContextMenu(Type aType, ContextMenuStrip aMenu)
             {
+                if (DefaultContextMenus.ContainsKey(aType))
+                {
+                    // the translation unit test may create the RepoObjectTree multiple times,
+                    // which results in a duplicate key exception.
+                    return;
+                }
                 DefaultContextMenus.Add(aType, aMenu);
             }
 
