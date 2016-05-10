@@ -53,8 +53,6 @@ namespace GitUI.UserControls
             txtBranchFilter.AutoCompleteCustomSource = null;
             _branchFilterAutoCompletionSrc.Clear();
 
-            DragDrops();
-
             var localBranchesRootNode = new TreeNode(Strings.branches.Text)
             {
                 ImageKey = "RemoteRepo.png",
