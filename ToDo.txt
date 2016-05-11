@@ -7,4 +7,6 @@ Vertical selection/highlighting? // Idea for graph
 Bug with "Show remotes" in context menu check box always remains on
 Prevent selecting "negative" amount of time in Ctrl+F
 Context menu structure with Diff/ (File tree)
-Test: play with checking out different branches and correct slection remaining (sometimes strange scrolling occurs)
+Test: play with checking out different branches and correct selection remaining (sometimes strange scrolling occurs)
+Bug with overwriting the path to diff/merge tool and editor if it is not a default location
+Branch list is empty when you start (observed on Davids PC)
