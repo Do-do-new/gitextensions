@@ -15,3 +15,4 @@ Bug: Apply on appearance change (e.g. font change) should actually "Apply" chang
 Bug: in case of font increase background picture for branch name in the graph is not big enough
 Add animation playing while diff is loading
 What is interactive add in context menu in commit window?
+FEATURE (may be on git level): stash file-name
