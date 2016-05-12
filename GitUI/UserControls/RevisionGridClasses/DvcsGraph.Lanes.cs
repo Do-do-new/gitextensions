@@ -210,7 +210,7 @@ namespace GitUI.RevisionGridClasses
 
                 // Look for crossing lanes
                 //   but only when there are not too many lanes taking up too much performance
-                if (currentRow.Count < 10)
+                if (currentRow.Count < 300)
                     for (int lane = 0; lane < currentRow.Count; lane++)
                     {
                         for (int item = 0; item < currentRow.LaneInfoCount(lane); item++)
