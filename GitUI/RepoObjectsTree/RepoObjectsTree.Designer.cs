@@ -120,8 +120,11 @@ namespace GitUI.UserControls
             // 
             // treeMain
             // 
+            this.treeMain.BackColor = SystemColors.Control;
+            this.treeMain.BorderStyle = BorderStyle.None;
             this.treeMain.ContextMenuStrip = this.menuMain;
             this.treeMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeMain.Font = new Font(AppSettings.Font.FontFamily, AppSettings.Font.Size + 2.0f);
             this.treeMain.FullRowSelect = true;
             this.treeMain.ImageIndex = 0;
             this.treeMain.ImageList = this.imgList;
