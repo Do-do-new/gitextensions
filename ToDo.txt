@@ -1,12 +1,13 @@
 Bug in Settings with label being too long
 Maybe add showing commit hash in Browse view (#2981)
 Add file tree context menu for index and unstaged
-Add possibility to add stash comments
+Make adding stash comments more intuitive and easier to notice
 Filter by keywords in diff lines #2444
 Vertical selection/highlighting? // Idea for graph
 Bug with "Show remotes" in context menu check box always remains on
 Prevent selecting "negative" amount of time in Ctrl+F
-Context menu structure with Diff/ (File tree)
+Context menu structure with Diff/ (File tree) (Epsecially open file directly from diff)
+Reset to parent from unstaged in case of a new file should work also from Diff window, not only from Commit window
 Test: play with checking out different branches and correct selection remaining (sometimes strange scrolling occurs)
 Bug with overwriting the path to diff/merge tool and editor if it is not a default location
 Branch list is empty when you start (observed on Davids PC)
