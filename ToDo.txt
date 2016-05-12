@@ -11,3 +11,7 @@ Reset to parent from unstaged in case of a new file should work also from Diff w
 Test: play with checking out different branches and correct selection remaining (sometimes strange scrolling occurs)
 Bug with overwriting the path to diff/merge tool and editor if it is not a default location
 Branch list is empty when you start (observed on Davids PC)
+Bug: Apply on appearance change (e.g. font change) should actually "Apply" changes
+Bug: in case of font increase background picture for branch name in the graph is not big enough
+Add animation playing while diff is loading
+What is interactive add in context menu in commit window?
