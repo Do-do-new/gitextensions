@@ -50,12 +50,14 @@
             // 
             this.groupBox8.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox8.AutoSize = true;
+            this.groupBox8.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.groupBox8.Controls.Add(this.homeIsSetToLabel);
             this.groupBox8.Controls.Add(this.ChangeHomeButton);
             this.groupBox8.Controls.Add(this.label51);
-            this.groupBox8.Location = new System.Drawing.Point(3, 133);
+            this.groupBox8.Location = new System.Drawing.Point(3, 234);
             this.groupBox8.Name = "groupBox8";
-            this.groupBox8.Size = new System.Drawing.Size(970, 144);
+            this.groupBox8.Size = new System.Drawing.Size(728, 154);
             this.groupBox8.TabIndex = 12;
             this.groupBox8.TabStop = false;
             this.groupBox8.Text = "Environment";
@@ -65,7 +67,7 @@
             this.homeIsSetToLabel.AutoSize = true;
             this.homeIsSetToLabel.Location = new System.Drawing.Point(8, 88);
             this.homeIsSetToLabel.Name = "homeIsSetToLabel";
-            this.homeIsSetToLabel.Size = new System.Drawing.Size(119, 16);
+            this.homeIsSetToLabel.Size = new System.Drawing.Size(127, 17);
             this.homeIsSetToLabel.TabIndex = 12;
             this.homeIsSetToLabel.Text = "HOME is set to: {0}";
             // 
@@ -84,7 +86,7 @@
             this.label51.AutoSize = true;
             this.label51.Location = new System.Drawing.Point(8, 19);
             this.label51.Name = "label51";
-            this.label51.Size = new System.Drawing.Size(674, 32);
+            this.label51.Size = new System.Drawing.Size(714, 34);
             this.label51.TabIndex = 0;
             this.label51.Text = resources.GetString("label51.Text");
             // 
@@ -92,6 +94,8 @@
             // 
             this.groupBox7.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox7.AutoSize = true;
+            this.groupBox7.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.groupBox7.Controls.Add(this.downloadGitForWindows);
             this.groupBox7.Controls.Add(this.label50);
             this.groupBox7.Controls.Add(this.BrowseGitBinPath);
@@ -102,7 +106,7 @@
             this.groupBox7.Controls.Add(this.GitBinPath);
             this.groupBox7.Location = new System.Drawing.Point(3, 3);
             this.groupBox7.Name = "groupBox7";
-            this.groupBox7.Size = new System.Drawing.Size(970, 115);
+            this.groupBox7.Size = new System.Drawing.Size(728, 208);
             this.groupBox7.TabIndex = 11;
             this.groupBox7.TabStop = false;
             this.groupBox7.Text = "Git";
@@ -110,9 +114,9 @@
             // downloadGitForWindows
             // 
             this.downloadGitForWindows.AutoSize = true;
-            this.downloadGitForWindows.Location = new System.Drawing.Point(369, 91);
-            this.downloadGitForWindows.Name = "downloadMsysgit";
-            this.downloadGitForWindows.Size = new System.Drawing.Size(111, 16);
+            this.downloadGitForWindows.Location = new System.Drawing.Point(8, 172);
+            this.downloadGitForWindows.Name = "downloadGitForWindows";
+            this.downloadGitForWindows.Size = new System.Drawing.Size(120, 17);
             this.downloadGitForWindows.TabIndex = 10;
             this.downloadGitForWindows.TabStop = true;
             this.downloadGitForWindows.Text = "Download msysgit";
@@ -121,18 +125,20 @@
             // label50
             // 
             this.label50.AutoSize = true;
-            this.label50.Location = new System.Drawing.Point(8, 18);
+            this.label50.Location = new System.Drawing.Point(8, 19);
             this.label50.Name = "label50";
-            this.label50.Size = new System.Drawing.Size(557, 16);
+            this.label50.Size = new System.Drawing.Size(644, 17);
             this.label50.TabIndex = 9;
-            this.label50.Text = "Git Extensions can use Git for Windows or cygwin to access git repositories. Set the correct paths below.";
+            this.label50.Text = "Git Extensions can use Git for Windows or cygwin to access git repositories. Set " +
+    "the correct paths below.";
             // 
             // BrowseGitBinPath
             // 
             this.BrowseGitBinPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BrowseGitBinPath.Location = new System.Drawing.Point(864, 62);
+            this.BrowseGitBinPath.AutoSize = true;
+            this.BrowseGitBinPath.Location = new System.Drawing.Point(486, 124);
             this.BrowseGitBinPath.Name = "BrowseGitBinPath";
-            this.BrowseGitBinPath.Size = new System.Drawing.Size(97, 25);
+            this.BrowseGitBinPath.Size = new System.Drawing.Size(93, 27);
             this.BrowseGitBinPath.TabIndex = 8;
             this.BrowseGitBinPath.Text = "Browse";
             this.BrowseGitBinPath.UseVisualStyleBackColor = true;
@@ -143,16 +149,16 @@
             this.label13.AutoSize = true;
             this.label13.Location = new System.Drawing.Point(8, 44);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(267, 16);
+            this.label13.Size = new System.Drawing.Size(288, 17);
             this.label13.TabIndex = 3;
             this.label13.Text = "Command used to run git (git.cmd or git.exe)";
             // 
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(8, 70);
+            this.label14.Location = new System.Drawing.Point(8, 101);
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(344, 16);
+            this.label14.Size = new System.Drawing.Size(368, 17);
             this.label14.TabIndex = 6;
             this.label14.Text = "Path to linux tools (sh). Leave empty when it is in the path.";
             // 
@@ -160,18 +166,19 @@
             // 
             this.GitPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.GitPath.Location = new System.Drawing.Point(372, 38);
+            this.GitPath.Location = new System.Drawing.Point(14, 64);
             this.GitPath.Name = "GitPath";
-            this.GitPath.Size = new System.Drawing.Size(486, 23);
+            this.GitPath.Size = new System.Drawing.Size(466, 23);
             this.GitPath.TabIndex = 4;
             this.GitPath.TextChanged += new System.EventHandler(this.GitPath_TextChanged);
             // 
             // BrowseGitPath
             // 
             this.BrowseGitPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BrowseGitPath.Location = new System.Drawing.Point(864, 36);
+            this.BrowseGitPath.AutoSize = true;
+            this.BrowseGitPath.Location = new System.Drawing.Point(486, 64);
             this.BrowseGitPath.Name = "BrowseGitPath";
-            this.BrowseGitPath.Size = new System.Drawing.Size(97, 25);
+            this.BrowseGitPath.Size = new System.Drawing.Size(93, 27);
             this.BrowseGitPath.TabIndex = 5;
             this.BrowseGitPath.Text = "Browse";
             this.BrowseGitPath.UseVisualStyleBackColor = true;
@@ -181,9 +188,9 @@
             // 
             this.GitBinPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.GitBinPath.Location = new System.Drawing.Point(372, 65);
+            this.GitBinPath.Location = new System.Drawing.Point(11, 128);
             this.GitBinPath.Name = "GitBinPath";
-            this.GitBinPath.Size = new System.Drawing.Size(486, 23);
+            this.GitBinPath.Size = new System.Drawing.Size(469, 23);
             this.GitBinPath.TabIndex = 7;
             this.GitBinPath.TextChanged += new System.EventHandler(this.GitBinPath_TextChanged);
             // 
@@ -193,12 +200,13 @@
             this.Controls.Add(this.groupBox8);
             this.Controls.Add(this.groupBox7);
             this.Name = "GitSettingsPage";
-            this.Size = new System.Drawing.Size(976, 538);
+            this.Size = new System.Drawing.Size(1412, 556);
             this.groupBox8.ResumeLayout(false);
             this.groupBox8.PerformLayout();
             this.groupBox7.ResumeLayout(false);
             this.groupBox7.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
