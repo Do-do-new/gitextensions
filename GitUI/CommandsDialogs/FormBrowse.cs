@@ -3652,14 +3652,14 @@ namespace GitUI.CommandsDialogs
 
         private void FilterComboBox_GotFocus(object sender, EventArgs e)
         {
-            FilterWatermarkPictureBox.Visible = false;
+            FilterWatermarkLabel.Visible = false;
         }
 
         private void FilterComboBox_LostFocus(object sender, EventArgs e)
         {
-            if (!FilterWatermarkPictureBox.Visible && string.IsNullOrEmpty(FilterComboBox.Text))
+            if (!FilterWatermarkLabel.Visible && string.IsNullOrEmpty(FilterComboBox.Text))
             {
-                FilterWatermarkPictureBox.Visible = true;
+                FilterWatermarkLabel.Visible = true;
             }
         }
 
