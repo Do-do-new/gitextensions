@@ -176,6 +176,7 @@ namespace GitUI
             dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.GradientActiveCaption;
             dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
             dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.Revisions.BorderStyle = BorderStyle.Fixed3D;
             this.Revisions.DefaultCellStyle = dataGridViewCellStyle4;
             this.Revisions.Dock = System.Windows.Forms.DockStyle.Fill;
             this.Revisions.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
