@@ -17,3 +17,4 @@ Add animation playing while diff is loading
 What is interactive add in context menu in commit window?
 FEATURE (may be on git level): stash file-name
 Add branch renaming to the tree
+Show new files contents when clicked in diff + allow to open them
