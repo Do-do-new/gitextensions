@@ -567,24 +567,40 @@ namespace GitUI
                         group.Tag = pair.Key;
                         FileStatusListView.Groups.Add(group);
                     }
+                    int matchedCount = 0;
                     foreach (var item in pair.Value)
                     {
                         if (_filter.IsMatch(item.Name))
                         {
-                            var listItem = new ListViewItem(item.Name, group);
-                            listItem.ImageIndex = GetItemImageIndex(item);
-                            if (item.SubmoduleStatus != null && !item.SubmoduleStatus.IsCompleted)
-                            {
-                                var capturedItem = item;
-                                item.SubmoduleStatus.ContinueWith((task) => listItem.ImageIndex = GetItemImageIndex(capturedItem),
-                                                                  CancellationToken.None,
-                                                                  TaskContinuationOptions.OnlyOnRanToCompletion,
-                                                                  TaskScheduler.FromCurrentSynchronizationContext());
-                            }
-                            listItem.Tag = item;
-                            FileStatusListView.Items.Add(listItem);
+                            matchedCount++;
                         }
-                    };
+                    }
+                    if (matchedCount > 200)
+                    {
+                        var listItem = new ListViewItem(@"Too many entries. Please narrow the list by using 'Filter files...' box (above)", group);
+                        FileStatusListView.Items.Add(listItem);
+                    }
+                    else
+                    {
+                        foreach (var item in pair.Value)
+                        {
+                            if (_filter.IsMatch(item.Name))
+                            {
+                                var listItem = new ListViewItem(item.Name, group);
+                                listItem.ImageIndex = GetItemImageIndex(item);
+                                if (item.SubmoduleStatus != null && !item.SubmoduleStatus.IsCompleted)
+                                {
+                                    var capturedItem = item;
+                                    item.SubmoduleStatus.ContinueWith((task) => listItem.ImageIndex = GetItemImageIndex(capturedItem),
+                                                                      CancellationToken.None,
+                                                                      TaskContinuationOptions.OnlyOnRanToCompletion,
+                                                                      TaskScheduler.FromCurrentSynchronizationContext());
+                                }
+                                listItem.Tag = item;
+                                FileStatusListView.Items.Add(listItem);
+                            }
+                        };
+                    }
                 }
             }
             if (updateCausedByFilter==false)
