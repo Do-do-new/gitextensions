@@ -47,8 +47,8 @@ namespace GitUI
             SelectFirstItemOnSetItems = true;
             _noDiffFilesChangesDefaultText = NoFiles.Text;
 #if !__MonoCS__ // TODO Drag'n'Drop doesn't work on Mono/Linux
-            FileStatusListView.MouseMove += FileStatusListView_MouseMove;
-            FileStatusListView.MouseDown += FileStatusListView_MouseDown;
+            //FileStatusListView.MouseMove += FileStatusListView_MouseMove;
+            //FileStatusListView.MouseDown += FileStatusListView_MouseDown;
 #endif
             if (_images == null)
             {
