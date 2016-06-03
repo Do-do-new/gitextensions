@@ -1,4 +1,3 @@
-Bug in Settings with label being too long
 Maybe add showing commit hash in Browse view (#2981)
 Add file tree context menu for index and unstaged
 Make adding stash comments more intuitive and easier to notice
@@ -18,3 +17,4 @@ What is interactive add in context menu in commit window?
 FEATURE (may be on git level): stash file-name
 Add branch renaming to the tree
 Show new files contents when clicked in diff + allow to open them
+TREE styles: 1)like in source-tree 2)ancestor left to right
