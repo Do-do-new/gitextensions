@@ -18,3 +18,4 @@ FEATURE (may be on git level): stash file-name
 Add branch renaming to the tree
 Show new files contents when clicked in diff + allow to open them
 TREE styles: 1)like in source-tree 2)ancestor left to right
+Can not select text in built-in console with the mouse
