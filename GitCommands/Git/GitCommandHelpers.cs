@@ -599,6 +599,7 @@ namespace GitCommands
                 Environment.SetEnvironmentVariable("GIT_SSH", path, EnvironmentVariableTarget.Process);
         }
 
+        /// <summary>Indicates whether the git SSH command uses Plink.</summary>
         public static bool Plink()
         {
             var sshString = GetSsh();
@@ -1029,7 +1030,7 @@ namespace GitCommands
 
                 if (x != '?' && x != '!' && x != ' ')
                 {
-                    GitItemStatus gitItemStatusX = null;
+                    GitItemStatus gitItemStatusX;
                     if (x == 'R' || x == 'C') // Find renamed files...
                     {
                         string nextfile = n + 1 < files.Length ? files[n + 1] : "";

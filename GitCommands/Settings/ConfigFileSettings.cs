@@ -97,6 +97,11 @@ namespace GitCommands.Settings
             SettingsCache.RemoveConfigSection(configSectionName);
         }
 
+        public IEnumerable<ConfigSection> GetConfigSections(string configSectionName)
+        {
+            return SettingsCache.GetConfigSections(configSectionName);
+        }
+
         public Encoding FilesEncoding
         {
             get
