@@ -119,6 +119,7 @@ namespace GitUI.UserControls
             // 
             // treeMain
             // 
+            this.treeMain.BackColor = System.Drawing.SystemColors.Control;
             this.treeMain.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeMain.ContextMenuStrip = this.menuMain;
             this.treeMain.Dock = System.Windows.Forms.DockStyle.Fill;
