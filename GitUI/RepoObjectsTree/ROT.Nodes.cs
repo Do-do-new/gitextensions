@@ -246,7 +246,7 @@ namespace GitUI.UserControls
             /// <summary>Styles the <see cref="TreeViewNode"/>.</summary>
             protected virtual void ApplyStyle()
             {
-                TreeViewNode.NodeFont = new System.Drawing.Font(AppSettings.Font.FontFamily, AppSettings.Font.Size + 2.0f);
+                TreeViewNode.NodeFont = AppSettings.Font;
             }
 
             public void Select()
