@@ -15,14 +15,17 @@ namespace GitUI.CommandsDialogs
     public class BuildReportTabPageExtension
     {
         private readonly TabControl tabControl;
+        private readonly string _caption;
 
         private TabPage buildReportTabPage;
         private WebBrowserCtrl buildReportWebBrowser;
         private GitRevision selectedGitRevision;
+        private String url;
 
-        public BuildReportTabPageExtension(TabControl tabControl)
+        public BuildReportTabPageExtension(TabControl tabControl, string caption)
         {
             this.tabControl = tabControl;
+            _caption = caption;
         }
 
         public void FillBuildReport(GitRevision revision)
@@ -52,7 +55,16 @@ namespace GitUI.CommandsDialogs
 
                     if (isFavIconMissing || tabControl.SelectedTab == buildReportTabPage)
                     {
-                        buildReportWebBrowser.Navigate(revision.BuildStatus.Url);
+                        if (revision.BuildStatus.ShowInBuildReportTab)
+                        {
+                            url = null;
+                            buildReportWebBrowser.Navigate(revision.BuildStatus.Url);
+                        }
+                        else
+                        {
+                            url = revision.BuildStatus.Url;
+                            buildReportWebBrowser.Navigate("about:blank");
+                        }
 
                         if (isFavIconMissing)
                         {
@@ -96,7 +108,7 @@ namespace GitUI.CommandsDialogs
                 {
                     Padding = new Padding(3),
                     TabIndex = tabControl.Controls.Count,
-                    Text = "Build Report",
+                    Text = _caption,
                     UseVisualStyleBackColor = true
                 };
             this.buildReportWebBrowser = new WebBrowserCtrl
@@ -143,6 +155,10 @@ namespace GitUI.CommandsDialogs
                         },
                     TaskScheduler.FromCurrentSynchronizationContext());
             }
+            if (url != null)
+            {
+                buildReportWebBrowser.Document.Write("<HTML><a href=\"" + url + "\" target=\"_blank\">Open report</a></HTML>");
+            }
         }
 
         private string DetermineFavIconUrl(HtmlDocument htmlDocument)
@@ -152,15 +168,22 @@ namespace GitUI.CommandsDialogs
                 links.Cast<HtmlElement>()
                      .SingleOrDefault(x => x.GetAttribute("rel").ToLowerInvariant() == "shortcut icon");
 
-            if (favIconLink != null)
+            if (favIconLink == null || htmlDocument.Url == null)
             {
-                var href = favIconLink.GetAttribute("href");
-                var favIconUrl = htmlDocument.Url.AbsoluteUri.Replace(htmlDocument.Url.PathAndQuery, href);
-
-                return favIconUrl;
+                return null;
             }
+            var href = favIconLink.GetAttribute("href");
 
-            return null;
+            if (htmlDocument.Url.PathAndQuery == "/")
+            {
+                //Szenario: http://test.test/teamcity/....
+                return htmlDocument.Url.AbsoluteUri.Replace(htmlDocument.Url.PathAndQuery, href);
+            }
+            else
+            {
+                //Szenario: http://teamcity.domain.test/
+                return new Uri(new Uri(htmlDocument.Url.AbsoluteUri), href).ToString();
+            }
         }
 
         private static Task<Stream> DownloadRemoteImageFileAsync(string uri)

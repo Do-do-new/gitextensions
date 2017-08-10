@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -54,7 +53,7 @@ namespace GitUI.CommandsDialogs
         private readonly TranslationString _enterCommitMessageHint = new TranslationString("Enter commit message");
 
         private readonly TranslationString _mergeConflicts =
-            new TranslationString("There are unresolved mergeconflicts, solve mergeconflicts before committing.");
+            new TranslationString("There are unresolved merge conflicts, solve merge conflicts before committing.");
 
         private readonly TranslationString _mergeConflictsCaption = new TranslationString("Merge conflicts");
 
@@ -183,14 +182,7 @@ namespace GitUI.CommandsDialogs
             Unstaged.FilterVisible = true;
             Staged.SetNoFilesText(_noStagedChanges.Text);
 
-            Message.Enabled = _useFormCommitMessage;
-
-            commitMessageToolStripMenuItem.Enabled = _useFormCommitMessage;
-            commitTemplatesToolStripMenuItem.Enabled = _useFormCommitMessage;
-
-            Message.WatermarkText = _useFormCommitMessage
-                ? _enterCommitMessageHint.Text
-                : _commitMessageDisabled.Text;
+            ConfigureMessageBox();
 
             _commitKind = commitKind;
             _editedCommit = editedCommit;
@@ -213,6 +205,37 @@ namespace GitUI.CommandsDialogs
             toolAuthor.Control.PreviewKeyDown += ToolAuthor_PreviewKeyDown;
         }
 
+        private void ConfigureMessageBox()
+        {
+            Message.Enabled = _useFormCommitMessage;
+
+            commitMessageToolStripMenuItem.Enabled = _useFormCommitMessage;
+            commitTemplatesToolStripMenuItem.Enabled = _useFormCommitMessage;
+
+            Message.WatermarkText = _useFormCommitMessage
+                ? _enterCommitMessageHint.Text
+                : _commitMessageDisabled.Text;
+
+            AssignCommitMessageFromTemplate();
+        }
+
+        private void AssignCommitMessageFromTemplate()
+        {
+            if (IsUICommandsInitialized)
+            {
+                // Check if commit.template is used
+                string fileName = Module.GetEffectivePathSetting("commit.template");
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    using (var commitReader = new StreamReader(fileName))
+                    {
+                        _commitTemplate = commitReader.ReadToEnd().Replace("\r", "");
+                    }
+                    Message.Text = _commitTemplate;
+                }
+            }
+        }
+
         void ToolAuthor_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (e.Alt)
@@ -221,15 +244,24 @@ namespace GitUI.CommandsDialogs
 
         private void FormCommit_Load(object sender, EventArgs e)
         {
-            if (AppSettings.CommitDialogSplitter != -1)
-                splitMain.SplitterDistance = AppSettings.CommitDialogSplitter;
-            if (AppSettings.CommitDialogRightSplitter != -1)
-                splitRight.SplitterDistance = AppSettings.CommitDialogRightSplitter;
+            int deviceDpi = GetCurrentDeviceDpi();
+            int commitDialogDpi = AppSettings.CommitDialogDeviceDpi;
+            int commitDialogSplitter = AppSettings.CommitDialogSplitter;
+            int commitDialogRightSplitter = AppSettings.CommitDialogRightSplitter;
 
+            float scaleFactor = 1.0f * deviceDpi / commitDialogDpi;
+            if (commitDialogSplitter != -1)
+                splitMain.SplitterDistance = (int)(scaleFactor * commitDialogSplitter);
+            if (commitDialogRightSplitter != -1)
+                splitRight.SplitterDistance = (int)(scaleFactor * commitDialogRightSplitter);
+
+            SetVisibilityOfSelectionFilter(AppSettings.CommitDialogSelectionFilter);
             Reset.Visible = AppSettings.ShowResetAllChanges;
             ResetUnStaged.Visible = AppSettings.ShowResetUnstagedChanges;
             CommitAndPush.Visible = AppSettings.ShowCommitAndPush;
             AdjustCommitButtonPanelHeight();
+            showUntrackedFilesToolStripMenuItem.Checked = !Module.EffectiveConfigFile.GetValue("status.showUntrackedFiles").Equals("no");
+            MinimizeBox = Owner == null;
         }
 
         private void AdjustCommitButtonPanelHeight()
@@ -245,10 +277,12 @@ namespace GitUI.CommandsDialogs
             // Do not remember commit message of fixup or squash commits, since they have
             // a special meaning, and can be dangerous if used inappropriately.
             if (CommitKind.Normal == _commitKind)
-                GitCommands.CommitHelper.SetCommitMessage(Module, Message.Text);
+                GitCommands.CommitHelper.SetCommitMessage(Module, Message.Text, Amend.Checked);
 
+            AppSettings.CommitDialogDeviceDpi = GetCurrentDeviceDpi();
             AppSettings.CommitDialogSplitter = splitMain.SplitterDistance;
             AppSettings.CommitDialogRightSplitter = splitRight.SplitterDistance;
+            AppSettings.CommitDialogSelectionFilter = toolbarSelectionFilter.Visible;
         }
 
         void SelectedDiff_ContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
@@ -273,7 +307,8 @@ namespace GitUI.CommandsDialogs
             StageSelectedFile,
             UnStageSelectedFile,
             ShowHistory,
-            ToggleSelectionFilter
+            ToggleSelectionFilter,
+            StageAll,
         }
 
         private bool AddToGitIgnore()
@@ -367,6 +402,19 @@ namespace GitUI.CommandsDialogs
             return false;
         }
 
+        private bool StageAllFiles()
+        {
+            if (Unstaged.IsEmpty)
+            {
+                return false;
+            }
+            else
+            {
+                StageAllToolStripMenuItemClick(this, null);
+                return true;
+            }
+        }
+
         private bool StartFileHistoryDialog()
         {
             if (Staged.Focused || Unstaged.Focused)
@@ -386,9 +434,19 @@ namespace GitUI.CommandsDialogs
 
         private bool ToggleSelectionFilter()
         {
-            selectionFilterToolStripMenuItem.Checked = !selectionFilterToolStripMenuItem.Checked;
-            toolbarSelectionFilter.Visible = selectionFilterToolStripMenuItem.Checked;
+            var visible = !selectionFilterToolStripMenuItem.Checked;
+            SetVisibilityOfSelectionFilter(visible);
+            if (visible)
+                selectionFilter.Focus();
+            else if (selectionFilter.Focused)
+                Unstaged.Focus();
             return true;
+        }
+
+        private void SetVisibilityOfSelectionFilter(bool visible)
+        {
+            selectionFilterToolStripMenuItem.Checked = visible;
+            toolbarSelectionFilter.Visible = visible;
         }
 
         protected override bool ExecuteCommand(int cmd)
@@ -406,6 +464,7 @@ namespace GitUI.CommandsDialogs
                 case Commands.UnStageSelectedFile: return UnStageSelectedFile();
                 case Commands.ShowHistory: return StartFileHistoryDialog();
                 case Commands.ToggleSelectionFilter: return ToggleSelectionFilter();
+                case Commands.StageAll: return StageAllFiles();
                 default: return base.ExecuteCommand(cmd);
             }
         }
@@ -472,7 +531,7 @@ namespace GitUI.CommandsDialogs
             if (!_currentItemStaged && _currentItem.IsNew)
                 patch = PatchManager.GetSelectedLinesAsNewPatch(Module, _currentItem.Name,
                     SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(),
-                    SelectedDiff.GetSelectionLength(), SelectedDiff.Encoding, false, SelectedDiff.FilePreabmle);
+                    SelectedDiff.GetSelectionLength(), SelectedDiff.Encoding, false, SelectedDiff.FilePreamble);
             else
                 patch = PatchManager.GetSelectedLinesAsPatch(Module, SelectedDiff.GetText(),
                     SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(),
@@ -552,7 +611,7 @@ namespace GitUI.CommandsDialogs
             else if (_currentItem.IsNew)
                 patch = PatchManager.GetSelectedLinesAsNewPatch(Module, _currentItem.Name,
                     SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(),
-                    SelectedDiff.Encoding, true, SelectedDiff.FilePreabmle);
+                    SelectedDiff.Encoding, true, SelectedDiff.FilePreamble);
             else
                 patch = PatchManager.GetResetUnstagedLinesAsPatch(Module, SelectedDiff.GetText(),
                     SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(),
@@ -612,17 +671,6 @@ namespace GitUI.CommandsDialogs
 
             Message.TextBoxFont = AppSettings.CommitFont;
 
-            // Check if commit.template is used
-            string fileName = Module.GetEffectivePathSetting("commit.template");
-            if (!string.IsNullOrEmpty(fileName))
-            {
-                using (var commitReader = new StreamReader(fileName))
-                {
-                    _commitTemplate = commitReader.ReadToEnd().Replace("\r", "");
-                }
-                Message.Text = _commitTemplate;
-            }
-
             Cursor.Current = Cursors.Default;
         }
 
@@ -634,7 +682,7 @@ namespace GitUI.CommandsDialogs
         private void UpdateMergeHead()
         {
             var mergeHead = Module.RevParse("MERGE_HEAD");
-            IsMergeCommit = Regex.IsMatch(mergeHead, GitRevision.Sha1HashPattern);
+            IsMergeCommit = GitRevision.IsFullSha1Hash(mergeHead);
         }
 
         private void InitializedStaged()
@@ -823,7 +871,7 @@ namespace GitUI.CommandsDialogs
         private void ClearDiffViewIfNoFilesLeft()
         {
             llShowPreview.Hide();
-            if (Staged.IsEmpty && Unstaged.IsEmpty)
+            if ((Staged.IsEmpty && Unstaged.IsEmpty) || (!Unstaged.SelectedItems.Any() && !Staged.SelectedItems.Any()))
                 SelectedDiff.Clear();
         }
 
@@ -859,9 +907,21 @@ namespace GitUI.CommandsDialogs
                         return;
                     }
 
-                    // there are no staged files, but there are unstaged files. Most probably user forgot to stage them.
-                    if (MessageBox.Show(this, _noFilesStagedButSuggestToCommitAllUnstaged.Text, _noStagedChanges.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                        return;
+                    try
+                    {
+                        // unsubscribe the event handler so that after the message box is closed, the RescanChanges call is suppressed
+                        // (otherwise it would move all changed files from staged back to unstaged file list)
+                        this.Activated -= FormCommitActivated;
+
+                        // there are no staged files, but there are unstaged files. Most probably user forgot to stage them.
+                        if (MessageBox.Show(this, _noFilesStagedButSuggestToCommitAllUnstaged.Text, _noStagedChanges.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                            return;
+                    }
+                    finally
+                    {
+                        this.Activated += FormCommitActivated;
+                    }
+
                     StageAllAccordingToFilter();
                     // if staging failed (i.e. line endings conflict), user already got error message, don't try to commit empty changeset.
                     if (Staged.IsEmpty)
@@ -888,7 +948,7 @@ namespace GitUI.CommandsDialogs
             if (_useFormCommitMessage && !ValidCommitMessage())
                 return;
 
-            if (Module.IsDetachedHead() && !Module.InTheMiddleOfRebase())
+            if (!AppSettings.DontConfirmCommitIfNoBranch && Module.IsDetachedHead() && !Module.InTheMiddleOfRebase())
             {
                 int idx = PSTaskDialog.cTaskDialog.ShowCommandBox(this,
                                                         _notOnBranchCaption.Text,
@@ -921,7 +981,7 @@ namespace GitUI.CommandsDialogs
 
                 ScriptManager.RunEventScripts(this, ScriptEvent.BeforeCommit);
 
-                var errorOccurred = !FormProcess.ShowDialog(this, Module.CommitCmd(amend, signOffToolStripMenuItem.Checked, toolAuthor.Text, _useFormCommitMessage));
+                var errorOccurred = !FormProcess.ShowDialog(this, Module.CommitCmd(amend, signOffToolStripMenuItem.Checked, toolAuthor.Text, _useFormCommitMessage, noVerifyToolStripMenuItem.Checked));
 
                 UICommands.RepoChangedNotifier.Notify();
 
@@ -929,11 +989,12 @@ namespace GitUI.CommandsDialogs
                     return;
 
                 Amend.Checked = false;
+                noVerifyToolStripMenuItem.Checked = false;
 
                 ScriptManager.RunEventScripts(this, ScriptEvent.AfterCommit);
 
                 Message.Text = string.Empty;
-                CommitHelper.SetCommitMessage(Module, string.Empty);
+                CommitHelper.SetCommitMessage(Module, string.Empty, Amend.Checked);
 
                 bool pushCompleted = true;
                 if (push)
@@ -1030,6 +1091,7 @@ namespace GitUI.CommandsDialogs
             {
                 toolRefreshItem.Enabled = false;
                 Initialize();
+                Message.RefreshAutoCompleteWords();
                 toolRefreshItem.Enabled = true;
             }
         }
@@ -1065,7 +1127,15 @@ namespace GitUI.CommandsDialogs
 
             OnStageAreaLoaded += stageAreaLoaded;
 
-            Module.ResetMixed("HEAD");
+            if (IsMergeCommit)
+            {
+                Staged.SelectAll();
+                Unstage(canUseUnstageAll: false);
+            }
+            else
+            {
+                Module.ResetMixed("HEAD");
+            }
             Initialize();
         }
 
@@ -1084,7 +1154,7 @@ namespace GitUI.CommandsDialogs
             Staged.ClearSelected();
 
             _currentSelection = Unstaged.SelectedItems.ToList();
-            GitItemStatus item = _currentSelection.FirstOrDefault();
+            GitItemStatus item = _currentSelection.LastOrDefault();
             ShowChanges(item, false);
 
             if (!item.IsSubmodule)
@@ -1103,9 +1173,11 @@ namespace GitUI.CommandsDialogs
             }
         }
 
-        private void Unstage()
+        private void Unstage(bool canUseUnstageAll = true)
         {
-            if (Staged.GitItemStatuses.Count() > 10 && Staged.SelectedItems.Count() == Staged.GitItemStatuses.Count())
+            if (canUseUnstageAll &&
+                Staged.GitItemStatuses.Count() > 10 &&
+                Staged.SelectedItems.Count() == Staged.GitItemStatuses.Count())
             {
                 UnstageAllToolStripMenuItemClick(null, null);
                 return;
@@ -1219,7 +1291,7 @@ namespace GitUI.CommandsDialogs
                 return;
             Stage(Unstaged.SelectedItems.ToList());
             if (Unstaged.IsEmpty)
-                Staged.Focus();
+                Message.Focus();
         }
 
         void Unstaged_DoubleClick(object sender, EventArgs e)
@@ -1227,14 +1299,17 @@ namespace GitUI.CommandsDialogs
             _currentFilesList = Unstaged;
             Stage(Unstaged.SelectedItems.ToList());
             if (Unstaged.IsEmpty)
-                Staged.Focus();
+                Message.Focus();
         }
 
         private void StageAllAccordingToFilter()
         {
             Stage(Unstaged.GitItemFilteredStatuses);
             Unstaged.SetFilter(String.Empty);
-            Staged.Focus();
+            if (Unstaged.IsEmpty)
+                Message.Focus();
+            else
+                Staged.Focus();
         }
 
         private void StageAllToolStripMenuItemClick(object sender, EventArgs e)
@@ -1254,8 +1329,14 @@ namespace GitUI.CommandsDialogs
 
             Unstaged.ClearSelected();
             _currentSelection = Staged.SelectedItems.ToList();
-            GitItemStatus item = _currentSelection.FirstOrDefault();
+            GitItemStatus item = _currentSelection.LastOrDefault();
             ShowChanges(item, true);
+        }
+
+        private void Staged_DataSourceChanged(object sender, EventArgs e)
+        {
+            int totalFilesCount = Staged.UnfilteredItemsCount() + Unstaged.UnfilteredItemsCount();
+            commitStagedCount.Text = Staged.UnfilteredItemsCount().ToString() + "/" + totalFilesCount.ToString();
         }
 
         private void Staged_Enter(object sender, EventArgs e)
@@ -1333,9 +1414,11 @@ namespace GitUI.CommandsDialogs
                     }
                     unStagedFiles.RemoveAll(item => !item.IsSubmodule && unstagedItems.Contains(item));
                     unStagedFiles.RemoveAll(item => item.IsSubmodule && item.SubmoduleStatus.IsCompleted &&
-                        !item.SubmoduleStatus.Result.IsDirty && unstagedItems.Contains(item));
+                        (item.SubmoduleStatus.Result == null ||
+                        !item.SubmoduleStatus.Result.IsDirty && unstagedItems.Contains(item)));
                     foreach (var item in unstagedItems.Where(item => item.IsSubmodule &&
-                        item.SubmoduleStatus.IsCompleted && item.SubmoduleStatus.Result.IsDirty))
+                        (item.SubmoduleStatus.Result == null ||
+                        item.SubmoduleStatus.IsCompleted && item.SubmoduleStatus.Result.IsDirty)))
                     {
                         item.SubmoduleStatus.Result.Status = SubmoduleStatus.Unknown;
                     }
@@ -1529,7 +1612,13 @@ namespace GitUI.CommandsDialogs
 
         private void EditGitIgnoreToolStripMenuItemClick(object sender, EventArgs e)
         {
-            UICommands.StartEditGitIgnoreDialog(this);
+            UICommands.StartEditGitIgnoreDialog(this, localExcludes: false);
+            Initialize();
+        }
+
+        private void EditGitInfoExcludeToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            UICommands.StartEditGitIgnoreDialog(this, localExcludes: true);
             Initialize();
         }
 
@@ -1553,8 +1642,11 @@ namespace GitUI.CommandsDialogs
                 default:
                     message = Module.GetMergeMessage();
 
-                    if (string.IsNullOrEmpty(message) && File.Exists(GitCommands.CommitHelper.GetCommitMessagePath(Module)))
-                        message = File.ReadAllText(GitCommands.CommitHelper.GetCommitMessagePath(Module), Module.CommitEncoding);
+                    if (string.IsNullOrEmpty(message))
+                    {
+                        message = CommitHelper.GetCommitMessage(Module);
+                        Amend.Checked = CommitHelper.GetAmendState(Module);
+                    }
                     break;
             }
 
@@ -1567,7 +1659,7 @@ namespace GitUI.CommandsDialogs
             //Save last commit message in settings. This way it can be used in multiple repositories.
             AppSettings.LastCommitMessage = commitMessageText;
 
-            var path = Path.Combine(Module.GetGitDirectory(), "COMMITMESSAGE");
+            var path = CommitHelper.GetCommitMessagePath(Module);
 
             //Commit messages are UTF-8 by default unless otherwise in the config file.
             //The git manual states:
@@ -1715,12 +1807,22 @@ namespace GitUI.CommandsDialogs
 
         private void AddFileTogitignoreToolStripMenuItemClick(object sender, EventArgs e)
         {
+            HandleExcludeFileClick(false);
+        }
+
+        private void AddFileToGitInfoExcludeToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            HandleExcludeFileClick(true);
+        }
+
+        private void HandleExcludeFileClick(bool localExclude)
+        {
             if (!Unstaged.SelectedItems.Any())
                 return;
 
             SelectedDiff.Clear();
-            var fileNames = Unstaged.SelectedItems.Select(item => item.Name).ToArray();
-            if (UICommands.StartAddToGitIgnoreDialog(this, fileNames))
+            var fileNames = Unstaged.SelectedItems.Select(item => "/" + item.Name).ToArray();
+            if (UICommands.StartAddToGitIgnoreDialog(this, localExclude, fileNames))
                 Initialize();
         }
 
@@ -1812,20 +1914,20 @@ namespace GitUI.CommandsDialogs
             Clipboard.SetText(fileNames.ToString());
         }
 
-        private void OpenWithDifftoolToolStripMenuItemClick(object sender, EventArgs e)
+        private void OpenFilesWithDiffTool(IEnumerable<GitItemStatus> items, bool staged)
         {
-            if (!Unstaged.SelectedItems.Any())
-                return;
-
-            var item = Unstaged.SelectedItem;
-            var fileName = item.Name;
-
-            var cmdOutput = Module.OpenWithDifftool(fileName);
-
-            if (!string.IsNullOrEmpty(cmdOutput))
-                MessageBox.Show(this, cmdOutput);
+            foreach (var item in items)
+            {
+                string output = Module.OpenWithDifftool(item.Name, null, null, null, staged? "--cached" : "");
+                if (!string.IsNullOrEmpty(output))
+                    MessageBox.Show(this, output);
+            }
         }
 
+        private void OpenWithDifftoolToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            OpenFilesWithDiffTool(Unstaged.SelectedItems, staged: false);
+        }
 
         private void ResetPartOfFileToolStripMenuItemClick(object sender, EventArgs e)
         {
@@ -1885,8 +1987,6 @@ namespace GitUI.CommandsDialogs
                 RescanChanges();
 
             updateAuthorInfo();
-
-
         }
 
         private void updateAuthorInfo()
@@ -2243,11 +2343,16 @@ namespace GitUI.CommandsDialogs
 
         private void openSubmoduleMenuItem_Click(object sender, EventArgs e)
         {
-            Process process = new Process();
-            process.StartInfo.FileName = Application.ExecutablePath;
-            process.StartInfo.Arguments = "browse";
-            process.StartInfo.WorkingDirectory = Module.WorkingDir + _currentItem.Name.EnsureTrailingPathSeparator();
-            process.Start();
+            var submoduleName = Unstaged.SelectedItem.Name;
+            Unstaged.SelectedItem.SubmoduleStatus.ContinueWith(
+                    (t) =>
+                    {
+                        Process process = new Process();
+                        process.StartInfo.FileName = Application.ExecutablePath;
+                        process.StartInfo.Arguments = "browse -commit=" + t.Result.Commit;
+                        process.StartInfo.WorkingDirectory = Path.Combine(Module.WorkingDir, submoduleName.EnsureTrailingPathSeparator());
+                        process.Start();
+                    });
         }
 
         private void resetSubmoduleChanges_Click(object sender, EventArgs e)
@@ -2436,12 +2541,7 @@ namespace GitUI.CommandsDialogs
 
         private void toolStripMenuItem9_Click(object sender, EventArgs e)
         {
-            foreach (var item in Staged.SelectedItems)
-            {
-                string output = Module.OpenWithDifftool(item.Name, null, null, null, "--cached");
-                if (!string.IsNullOrEmpty(output))
-                    MessageBox.Show(this, output);
-            }
+            OpenFilesWithDiffTool(Staged.SelectedItems, staged: true);
         }
 
         private void toolStripMenuItem10_Click(object sender, EventArgs e)
@@ -2523,6 +2623,11 @@ namespace GitUI.CommandsDialogs
                     components.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        private void createBranchToolStripButton_Click(object sender, EventArgs e)
+        {
+            UICommands.StartCreateBranchDialog(this, null);
         }
     }
 

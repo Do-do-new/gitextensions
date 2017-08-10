@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Linq;
 using GitCommands;
 using ResourceManager;
+using GitUI.Editor;
 
 namespace GitUI.UserControls
 {
@@ -53,7 +54,7 @@ namespace GitUI.UserControls
 
                 if (Revision != null)
                 {
-                    groupBox1.Text = Revision.Guid.Substring(0, 10);
+                    groupBox1.Text = Revision.Guid.Length > 10 ? Revision.Guid.Substring(0, 10) : Revision.Guid;
                     labelAuthor.Text = string.Format("{0}", Revision.Author);
                     labelDate.Text = string.Format(Strings.GetCommitDateText() + ": {0}", Revision.CommitDate);
                     labelMessage.Text = string.Format("{0}", Revision.Subject);
@@ -64,6 +65,7 @@ namespace GitUI.UserControls
                     if (tagList.Any())
                     {
                         labelTags.BackColor = _tagsBackColor;
+                        labelTags.ForeColor = ColorHelper.GetForeColorForBackColor(_tagsBackColor);
                     }
                     else
                     {
@@ -76,6 +78,7 @@ namespace GitUI.UserControls
                     if (branchesList.Any())
                     {
                         labelBranches.BackColor = _branchesBackColor;
+                        labelBranches.ForeColor = ColorHelper.GetForeColorForBackColor(_branchesBackColor);
                     }
                     else
                     {

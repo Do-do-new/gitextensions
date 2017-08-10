@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Security.Policy;
 using System.Windows.Forms;
 using GitCommands;
 using GitCommands.Config;
 using GitUI.HelperDialogs;
+using GitUIPluginInterfaces;
 
 namespace GitUI.Script
 {
@@ -90,16 +89,16 @@ namespace GitUI.Script
             GitRevision selectedRevision = null;
             GitRevision currentRevision = null;
 
-            var selectedLocalBranches = new List<GitRef>();
-            var selectedRemoteBranches = new List<GitRef>();
+            var selectedLocalBranches = new List<IGitRef>();
+            var selectedRemoteBranches = new List<IGitRef>();
             var selectedRemotes = new List<string>();
-            var selectedBranches = new List<GitRef>();
-            var selectedTags = new List<GitRef>();
-            var currentLocalBranches = new List<GitRef>();
-            var currentRemoteBranches = new List<GitRef>();
+            var selectedBranches = new List<IGitRef>();
+            var selectedTags = new List<IGitRef>();
+            var currentLocalBranches = new List<IGitRef>();
+            var currentRemoteBranches = new List<IGitRef>();
             var currentRemote = "";
-            var currentBranches = new List<GitRef>();
-            var currentTags = new List<GitRef>();
+            var currentBranches = new List<IGitRef>();
+            var currentTags = new List<IGitRef>();
 
             foreach (string option in Options)
             {
@@ -110,12 +109,12 @@ namespace GitUI.Script
                     currentRevision = GetCurrentRevision(aModule, revisionGrid, currentTags, currentLocalBranches, currentRemoteBranches, currentBranches, currentRevision);
 
                     if (currentLocalBranches.Count == 1)
-                        currentRemote = aModule.GetSetting(string.Format("branch.{0}.remote", currentLocalBranches[0].Name));
+                        currentRemote = aModule.GetSetting(string.Format(SettingKeyString.BranchRemote, currentLocalBranches[0].Name));
                     else
                     {
                         currentRemote = aModule.GetCurrentRemote();
                         if (string.IsNullOrEmpty(currentRemote))
-                            currentRemote = aModule.GetSetting(string.Format("branch.{0}.remote",
+                            currentRemote = aModule.GetSetting(string.Format(SettingKeyString.BranchRemote,
                                 askToSpecify(currentLocalBranches, "Current Revision Branch")));
                     }
                 }
@@ -320,7 +319,25 @@ namespace GitUI.Script
                         break;
                 }
             }
-            command = ExpandCommandVariables(command,aModule);
+            command = ExpandCommandVariables(command, aModule);
+
+            if (scriptInfo.IsPowerShell)
+            {
+                PowerShellHelper.RunPowerShell(command, argument, aModule.WorkingDir, scriptInfo.RunInBackground);
+                return false;
+            }
+
+            if (command.StartsWith(PluginPrefix))
+            {
+                command = command.Replace(PluginPrefix, "");
+                foreach (var plugin in Plugin.LoadedPlugins.Plugins)
+                    if (plugin.Description.ToLower().Equals(command, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        var eventArgs = new GitUIEventArgs(owner, revisionGrid.UICommands, argument);
+                        return plugin.Execute(eventArgs);
+                    }
+                return false;
+            }
 
             if (!scriptInfo.RunInBackground)
                 FormProcess.ShowDialog(owner, command, argument, aModule.WorkingDir, null, true);
@@ -331,6 +348,7 @@ namespace GitUI.Script
                 else
                     aModule.RunExternalCmdDetached(command, argument);
             }
+
             return !scriptInfo.RunInBackground;
         }
 
@@ -340,11 +358,11 @@ namespace GitUI.Script
            
         }
 
-        private static GitRevision CalculateSelectedRevision(RevisionGrid revisionGrid, List<GitRef> selectedRemoteBranches,
-                                                             List<string> selectedRemotes, List<GitRef> selectedLocalBranches,
-                                                             List<GitRef> selectedBranches, List<GitRef> selectedTags)
+        private static GitRevision CalculateSelectedRevision(RevisionGrid revisionGrid, List<IGitRef> selectedRemoteBranches,
+                                                             List<string> selectedRemotes, List<IGitRef> selectedLocalBranches,
+                                                             List<IGitRef> selectedBranches, List<IGitRef> selectedTags)
         {
-            GitRevision selectedRevision = revisionGrid.GetRevision(revisionGrid.LastRowIndex);
+            GitRevision selectedRevision = revisionGrid.LatestSelectedRevision;
             foreach (GitRef head in selectedRevision.Refs)
             {
                 if (head.IsTag)
@@ -366,13 +384,13 @@ namespace GitUI.Script
             return selectedRevision;
         }
 
-        private static GitRevision GetCurrentRevision(GitModule aModule, RevisionGrid RevisionGrid, List<GitRef> currentTags, List<GitRef> currentLocalBranches,
-                                                      List<GitRef> currentRemoteBranches, List<GitRef> currentBranches,
+        private static GitRevision GetCurrentRevision(GitModule aModule, RevisionGrid RevisionGrid, List<IGitRef> currentTags, List<IGitRef> currentLocalBranches,
+                                                      List<IGitRef> currentRemoteBranches, List<IGitRef> currentBranches,
                                                       GitRevision currentRevision)
         {
             if (currentRevision == null)
             {
-                IList<GitRef> refs;
+                IList<IGitRef> refs;
 
                 if (RevisionGrid == null)
                 {
@@ -385,7 +403,7 @@ namespace GitUI.Script
                     refs = currentRevision.Refs;
                 }
 
-                foreach (GitRef gitRef in refs)
+                foreach (IGitRef gitRef in refs)
                 {
                     if (gitRef.IsTag)
                         currentTags.Add(gitRef);
@@ -442,6 +460,8 @@ namespace GitUI.Script
             }
         }
 
+        private static string PluginPrefix = "plugin:";
+
         private static string OverrideCommandWhenNecessary(string originalCommand)
         {
             //Make sure we are able to run git, even if git is not in the path
@@ -457,10 +477,16 @@ namespace GitUI.Script
 
             if (originalCommand.Equals("{openurl}", StringComparison.CurrentCultureIgnoreCase))
                 return "explorer";
+
+            //Prefix should be {plugin:pluginname},{plugin=pluginname}
+            var match = System.Text.RegularExpressions.Regex.Match(originalCommand, @"\{plugin.(.+)\}", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (match.Success && match.Groups.Count > 1)
+                originalCommand = string.Format("{0}{1}", PluginPrefix, match.Groups[1].Value.ToLower());
+
             return originalCommand;
         }
 
-        private static string askToSpecify(IEnumerable<GitRef> options, string title)
+        private static string askToSpecify(IEnumerable<IGitRef> options, string title)
         {
             using (var f = new FormRunScriptSpecify(options, title))
             {

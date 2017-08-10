@@ -193,6 +193,19 @@ namespace GitCommands
             return fi != null && fi.Exists;
         }
 
+        public static bool DirectoryExists(string aPath)
+        {
+            try
+            {
+                DirectoryInfo di = new DirectoryInfo(aPath);
+                return di.Exists;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static bool TryFindFullPath(string aFileName, out string fullPath)
         {
             if (PathUtil.PathExists(aFileName))
@@ -211,5 +224,23 @@ namespace GitCommands
             fullPath = null;
             return false;
         }
+
+        public static bool TryFindShellPath(string shell, out string shellPath)
+        {
+            shellPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", shell);
+            if (PathUtil.PathExists(shellPath))
+                return true;
+
+            shellPath = Path.Combine(AppSettings.GitBinDir, shell);
+            if (PathUtil.PathExists(shellPath))
+                return true;
+
+            if (PathUtil.TryFindFullPath(shell, out shellPath))
+                return true;
+
+            shellPath = null;
+            return false;
+        }
+
     }
 }

@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using GitCommands.Config;
+using GitUIPluginInterfaces;
 
 namespace GitCommands.Settings
 {
-    public class ConfigFileSettings : SettingsContainer<ConfigFileSettings, ConfigFileSettingsCache>
+    public class ConfigFileSettings : SettingsContainer<ConfigFileSettings, ConfigFileSettingsCache>, IConfigFileSettings
     {
         public ConfigFileSettings(ConfigFileSettings aLowerPriority, ConfigFileSettingsCache aSettingsCache)
             : base(aLowerPriority, aSettingsCache)
@@ -29,7 +30,7 @@ namespace GitCommands.Settings
         private static ConfigFileSettings CreateLocal(GitModule aModule, ConfigFileSettings aLowerPriority, bool allowCache = true)
         {
             return new ConfigFileSettings(aLowerPriority,
-                ConfigFileSettingsCache.Create(Path.Combine(aModule.GetGitDirectory(), "config"), true, allowCache));
+                ConfigFileSettingsCache.Create(Path.Combine(aModule.GitCommonDirectory, "config"), true, allowCache));
         }
 
         public static ConfigFileSettings CreateGlobal(bool allowCache = true)
@@ -49,9 +50,15 @@ namespace GitCommands.Settings
 
         public static ConfigFileSettings CreateSystemWide(bool allowCache = true)
         {
-            string configPath = Path.Combine(AppSettings.GitBinDir, "..", "etc", "gitconfig");
+            // Git 2.xx
+            string configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Git", "config");
             if (!File.Exists(configPath))
-                return null;
+            {
+                // Git 1.xx
+                configPath = Path.Combine(AppSettings.GitBinDir, "..", "etc", "gitconfig");
+                if (!File.Exists(configPath))
+                    return null;
+            }
 
             return new ConfigFileSettings(null,
                 ConfigFileSettingsCache.Create(configPath, false, allowCache));
@@ -87,14 +94,28 @@ namespace GitCommands.Settings
             SetValue(setting, ConfigSection.FixPath(value));
         }
 
-        public IList<ConfigSection> GetConfigSections()
+        public IList<IConfigSection> GetConfigSections()
         {
             return SettingsCache.GetConfigSections();
         }
 
-        public void RemoveConfigSection(string configSectionName)
+        /// <summary>
+        /// Adds the specific configuration section to the .git/config file.
+        /// </summary>
+        /// <param name="configSection">The configuration section.</param>
+        public void AddConfigSection(IConfigSection configSection)
         {
-            SettingsCache.RemoveConfigSection(configSectionName);
+            SettingsCache.AddConfigSection(configSection);
+        }
+
+        /// <summary>
+        /// Removes the specific configuration section from the .git/config file.
+        /// </summary>
+        /// <param name="configSectionName">The name of the configuration section.</param>
+        /// <param name="performSave">If <see langword="true"/> the configuration changes will be saved immediately.</param>
+        public void RemoveConfigSection(string configSectionName, bool performSave = false)
+        {
+            SettingsCache.RemoveConfigSection(configSectionName, performSave);
         }
 
         public Encoding FilesEncoding
@@ -155,7 +176,6 @@ namespace GitCommands.Settings
         {
             SetValue(settingName, encoding == null ? null : encoding.HeaderName);
         }
-
     }
 
     public class CorePath : SettingsPath

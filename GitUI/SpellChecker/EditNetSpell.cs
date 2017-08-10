@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -34,11 +33,11 @@ namespace GitUI.SpellChecker
         private readonly TranslationString dictionaryText = new TranslationString("Dictionary");
         private readonly TranslationString markIllFormedLinesText = new TranslationString("Mark ill formed lines");
 
-        private readonly SpellCheckEditControl _customUnderlines;
+        private SpellCheckEditControl _customUnderlines;
         private Spelling _spelling;
         private static WordDictionary _wordDictionary;
 
-        private readonly CancellationTokenSource _autoCompleteCancellationTokenSource = new CancellationTokenSource();
+        private CancellationTokenSource _autoCompleteCancellationTokenSource = new CancellationTokenSource();
         private readonly List<IAutoCompleteProvider> _autoCompleteProviders = new List<IAutoCompleteProvider>();
         private Task<IEnumerable<AutoCompleteWord>> _autoCompleteListTask;
         private bool _autoCompleteWasUserActivated;
@@ -63,15 +62,10 @@ namespace GitUI.SpellChecker
             InitializeComponent();
             Translate();
 
-            _customUnderlines = new SpellCheckEditControl(TextBox);
-
-            SpellCheckTimer.Enabled = false;
-
-            EnabledChanged += EditNetSpellEnabledChanged;
-
-            if(AppSettings.ProvideAutocompletion)
-              InitializeAutoCompleteWordsTask();
+            MistakeFont = new Font(TextBox.Font, FontStyle.Underline);
+            TextBoxFont = TextBox.Font;
         }
+
 
         public override string Text
         {
@@ -214,7 +208,7 @@ namespace GitUI.SpellChecker
             }
             set
             {
-               TextBox.SelectedText = value;
+                TextBox.SelectedText = value;
             }
         }
 
@@ -223,53 +217,62 @@ namespace GitUI.SpellChecker
             get
             {
                 return IsUICommandsInitialized ?
-                    Module.EffectiveSettings:
+                    Module.EffectiveSettings :
                     AppSettings.SettingsContainer;
             }
         }
+
 
         public void SelectAll()
         {
             TextBox.SelectAll();
         }
 
-        private void EditNetSpellLoad(object sender, EventArgs e)
+        protected override void OnRuntimeLoad(EventArgs e)
         {
-            MistakeFont = new Font(TextBox.Font, FontStyle.Underline);
-            TextBoxFont = TextBox.Font;
+            base.OnRuntimeLoad(e);
+
+            _customUnderlines = new SpellCheckEditControl(TextBox);
+            TextBox.SelectionChanged += TextBox_SelectionChanged;
+
+            EnabledChanged += EditNetSpellEnabledChanged;
+
             ShowWatermark();
 
             components = new Container();
-            _spelling =
-                new Spelling(components)
-                    {
-                        ShowDialog = false,
-                        IgnoreAllCapsWords = true,
-                        IgnoreWordsWithDigits = true
-                    };
+            _spelling = new Spelling(components)
+            {
+                ShowDialog = false,
+                IgnoreAllCapsWords = true,
+                IgnoreWordsWithDigits = true
+            };
 
-            if(AppSettings.ProvideAutocompletion)
+            if (AppSettings.ProvideAutocompletion)
+            {
+                InitializeAutoCompleteWordsTask();
                 _autoCompleteListTask.ContinueWith(
-                w =>
-                {
-                    _spelling.AddAutoCompleteWords(w.Result.Select(x => x.Word));
-                    w.Dispose();
-                },
+                    w =>
+                    {
+                        _spelling.AddAutoCompleteWords(w.Result.Select(x => x.Word));
+                        w.Dispose();
+                    },
                     _autoCompleteCancellationTokenSource.Token,
                     TaskContinuationOptions.NotOnCanceled,
                     TaskScheduler.FromCurrentSynchronizationContext()
                 );
+            }
             //
             // spelling
             //
             _spelling.ReplacedWord += SpellingReplacedWord;
             _spelling.DeletedWord += SpellingDeletedWord;
             _spelling.MisspelledWord += SpellingMisspelledWord;
-
             //
             // wordDictionary
             //
             LoadDictionary();
+
+            SpellCheckTimer.Enabled = true;
         }
 
         private void LoadDictionary()
@@ -283,9 +286,9 @@ namespace GitUI.SpellChecker
             {
                 _wordDictionary =
                     new WordDictionary(components)
-                        {
-                            DictionaryFile = dictionaryFile
-                        };
+                    {
+                        DictionaryFile = dictionaryFile
+                    };
             }
 
             _spelling.Dictionary = _wordDictionary;
@@ -508,23 +511,11 @@ namespace GitUI.SpellChecker
 
             var mi =
                 new ToolStripMenuItem(markIllFormedLinesText.Text)
-                    {
-                        Checked = AppSettings.MarkIllFormedLinesInCommitMsg
-                    };
+                {
+                    Checked = AppSettings.MarkIllFormedLinesInCommitMsg
+                };
             mi.Click += MarkIllFormedLinesInCommitMsgClick;
             SpellCheckContextMenu.Items.Add(mi);
-        }
-
-        private static string CultureCodeToString(string cultureCode)
-        {
-            try
-            {
-                return new CultureInfo(new CultureInfo(cultureCode.Replace('_', '-')).TwoLetterISOLanguageName).NativeName;
-            }
-            catch
-            {
-                return cultureCode;
-            }
         }
 
         private void RemoveWordClick(object sender, EventArgs e)
@@ -585,6 +576,11 @@ namespace GitUI.SpellChecker
 
         private void TextBoxTextChanged(object sender, EventArgs e)
         {
+            if (_customUnderlines.IsImeStartingComposition)
+            {
+                return;
+            }
+
             if (!_disableAutoCompleteTriggerOnTextUpdate)
             {
                 // Reset when timer is already running
@@ -610,14 +606,8 @@ namespace GitUI.SpellChecker
             }
         }
 
-        private void TextBoxSizeChanged(object sender, EventArgs e)
-        {
-            SpellCheckTimer.Enabled = true;
-        }
-
         private void TextBoxLeave(object sender, EventArgs e)
         {
-            ShowWatermark();
             if (ActiveControl != AutoComplete)
                 CloseAutoComplete();
         }
@@ -643,11 +633,9 @@ namespace GitUI.SpellChecker
             IsUndoInProgress = false;
         }
 
-
-
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (!e.Alt && !e.Control && !e.Shift && _keysToSendToAutoComplete.ContainsKey (e.KeyCode) && AutoComplete.Visible)
+            if (!e.Alt && !e.Control && !e.Shift && _keysToSendToAutoComplete.ContainsKey(e.KeyCode) && AutoComplete.Visible)
             {
 
                 if (e.KeyCode == Keys.Up && AutoComplete.SelectedIndex == 0)
@@ -666,26 +654,19 @@ namespace GitUI.SpellChecker
                 return;
             }
 
-            if (e.Control && e.KeyCode == Keys.V)
+            // handle paste from clipboard (Ctrl+V, Shift+Ins)
+            if ((e.Control && e.KeyCode == Keys.V) || (e.Shift && e.KeyCode == Keys.Insert))
             {
-                if (!Clipboard.ContainsText())
-                {
-                    e.Handled = true;
-                    return;
-                }
-                // remove image data from clipboard
-                var text = Clipboard.GetText();
-                // Clipboard.SetText throws exception when text is null or empty. See https://msdn.microsoft.com/en-us/library/ydby206k.aspx
-                if (!string.IsNullOrEmpty(text))
-                {
-                    Clipboard.SetText(text);
-                }
+                PasteTextFromClipboard();
+                e.Handled = true;
+                return;
             }
-            else if (e.Control && !e.Alt && e.KeyCode == Keys.Z)
+
+            if (e.Control && !e.Alt && e.KeyCode == Keys.Z)
             {
                 UndoHighlighting();
             }
-            else if (e.Control && !e.Alt && e.KeyCode == Keys.Space)
+            else if (e.Control && !e.Alt && e.KeyCode == Keys.Space && AppSettings.ProvideAutocompletion)
             {
                 UpdateOrShowAutoComplete(true);
                 e.Handled = true;
@@ -694,6 +675,12 @@ namespace GitUI.SpellChecker
             }
 
             OnKeyDown(e);
+        }
+
+        private void PasteTextFromClipboard()
+        {
+            // insert only text
+            TextBox.Paste(DataFormats.GetFormat(DataFormats.UnicodeText));
         }
 
         private void TextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -705,13 +692,8 @@ namespace GitUI.SpellChecker
         {
             UpdateOrShowAutoComplete(false);
 
-            if (SelectionChanged != null)
-                SelectionChanged(sender, e);
-        }
-
-        private void TextBox_Enter(object sender, EventArgs e)
-        {
-            HideWatermark();
+            var handler = SelectionChanged;
+            handler?.Invoke(sender, e);
         }
 
         private void ShowWatermark()
@@ -736,10 +718,14 @@ namespace GitUI.SpellChecker
             }
         }
 
-        public new bool Focus()
+        private void TextBox_LostFocus(object sender, EventArgs e)
+        {
+            ShowWatermark();
+        }
+
+        private void TextBox_GotFocus(object sender, EventArgs e)
         {
             HideWatermark();
-            return base.Focus();
         }
 
         private void CutMenuItemClick(object sender, EventArgs e)
@@ -756,11 +742,7 @@ namespace GitUI.SpellChecker
         private void PasteMenuItemClick(object sender, EventArgs e)
         {
             if (!Clipboard.ContainsText()) return;
-            // remove image data from clipboard
-            string text = Clipboard.GetText();
-            Clipboard.SetText(text);
-
-            TextBox.Paste();
+            PasteTextFromClipboard();
             CheckSpelling();
         }
 
@@ -788,7 +770,7 @@ namespace GitUI.SpellChecker
             TextBox.SelectionLength = 0;
             TextBox.SelectionStart = oldPos;
             //restore old color only if oldPos doesn't intersects with colored selection
-            if(restoreColor)
+            if (restoreColor)
                 TextBox.SelectionColor = oldColor;
             //undoes all recent selections while ctrl-z pressed
             skipSelectionUndo = true;
@@ -814,8 +796,16 @@ namespace GitUI.SpellChecker
             }
         }
 
-        private void InitializeAutoCompleteWordsTask ()
+        public void RefreshAutoCompleteWords()
         {
+            if (AppSettings.ProvideAutocompletion)
+                InitializeAutoCompleteWordsTask();
+        }
+
+        private void InitializeAutoCompleteWordsTask()
+        {
+            CancelAutoComplete();
+            _autoCompleteCancellationTokenSource = new CancellationTokenSource();
             _autoCompleteListTask = new Task<IEnumerable<AutoCompleteWord>>(
                     () =>
                     {
@@ -846,15 +836,15 @@ namespace GitUI.SpellChecker
                             t.Dispose();
                             return res;
                         }).Distinct().ToList();
-                    });
+                    }, _autoCompleteCancellationTokenSource.Token);
         }
 
-        public void AddAutoCompleteProvider (IAutoCompleteProvider autoCompleteProvider)
+        public void AddAutoCompleteProvider(IAutoCompleteProvider autoCompleteProvider)
         {
             _autoCompleteProviders.Add(autoCompleteProvider);
         }
 
-        protected override bool ProcessCmdKey (ref Message msg, Keys keyData)
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (AutoComplete.Visible)
             {
@@ -874,7 +864,7 @@ namespace GitUI.SpellChecker
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        private string GetWordAtCursor ()
+        private string GetWordAtCursor()
         {
             if (TextBox.Text.Length > TextBox.SelectionStart && IsSeparatorChar(TextBox.Text[TextBox.SelectionStart]))
                 return null;
@@ -889,20 +879,20 @@ namespace GitUI.SpellChecker
             return sb.ToString();
         }
 
-        private bool IsSeparatorChar (char c)
+        private bool IsSeparatorChar(char c)
         {
             return char.IsWhiteSpace(c) || c == '.';
         }
 
-        private void CloseAutoComplete ()
+        private void CloseAutoComplete()
         {
             AutoComplete.Hide();
             _autoCompleteWasUserActivated = false;
         }
 
-        private void AcceptAutoComplete (AutoCompleteWord completionWord = null)
+        private void AcceptAutoComplete(AutoCompleteWord completionWord = null)
         {
-            completionWord = completionWord ?? (AutoCompleteWord) AutoComplete.SelectedItem;
+            completionWord = completionWord ?? (AutoCompleteWord)AutoComplete.SelectedItem;
 
             var word = GetWordAtCursor();
 
@@ -916,8 +906,18 @@ namespace GitUI.SpellChecker
             CloseAutoComplete();
         }
 
-        private void UpdateOrShowAutoComplete (bool calledByUser)
+        private void UpdateOrShowAutoComplete(bool calledByUser)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (_customUnderlines.IsImeStartingComposition)
+            {
+                return;
+            }
+
             if (_autoCompleteListTask == null || !AppSettings.ProvideAutocompletion)
                 return;
 
@@ -1001,20 +1001,20 @@ namespace GitUI.SpellChecker
             TextBox.Focus();
         }
 
-        private Point GetCursorPosition ()
+        private Point GetCursorPosition()
         {
             var cursorPos = TextBox.GetPositionFromCharIndex(TextBox.SelectionStart);
-            cursorPos.Y += (int) Math.Ceiling(TextBox.Font.GetHeight());
+            cursorPos.Y += (int)Math.Ceiling(TextBox.Font.GetHeight());
             cursorPos.X += 2;
             return cursorPos;
         }
 
-        private void AutoComplete_Click (object sender, EventArgs e)
+        private void AutoComplete_Click(object sender, EventArgs e)
         {
             AcceptAutoComplete();
         }
 
-        private void AutoCompleteTimer_Tick (object sender, EventArgs e)
+        private void AutoCompleteTimer_Tick(object sender, EventArgs e)
         {
             if (!_customUnderlines.IsImeStartingComposition)
             {
@@ -1023,14 +1023,14 @@ namespace GitUI.SpellChecker
             }
         }
 
-        public void CancelAutoComplete ()
+        public void CancelAutoComplete()
         {
             _autoCompleteCancellationTokenSource.Cancel();
             AutoCompleteToolTipTimer.Stop();
             AutoCompleteTimer.Stop();
         }
 
-        private void AutoCompleteToolTipTimer_Tick (object sender, EventArgs e)
+        private void AutoCompleteToolTipTimer_Tick(object sender, EventArgs e)
         {
             AutoCompleteToolTip.Hide(TextBox);
         }
@@ -1049,7 +1049,7 @@ namespace GitUI.SpellChecker
                 _customUnderlines.Dispose();
                 if (components != null)
                     components.Dispose();
-                if (_autoCompleteListTask != null &&_autoCompleteListTask.Status == TaskStatus.Canceled)
+                if (_autoCompleteListTask != null && _autoCompleteListTask.Status == TaskStatus.Canceled)
                 {
                     _autoCompleteListTask.Dispose();
                 }
